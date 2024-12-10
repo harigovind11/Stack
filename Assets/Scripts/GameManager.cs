@@ -9,13 +9,15 @@ public class GameManager : MonoBehaviour
     [SerializeField] GameObject blockPrefab;
     [SerializeField] Transform spawnPoint1;
     [SerializeField] Transform spawnPoint2;
+    [SerializeField] Camera mainCamera;
 
     public bool useFirstSpawnPoint = true;
-    public float placementTolerance = 0.5f;
     public float speedIncreaseRate = 0.1f;
+    public float cameraMoveUpAmount = 1f; public float cameraMoveSpeed = 2f;
 
     float stackHeight;
     GameObject currentBlock;
+    GameObject lastStackedBlock; Vector3 targetCameraPosition;
 
     void Awake()
     {
@@ -23,6 +25,7 @@ public class GameManager : MonoBehaviour
         {
             instance = this;
         }
+        targetCameraPosition = mainCamera.transform.position;
         SpawnBlock();
     }
 
@@ -35,7 +38,7 @@ public class GameManager : MonoBehaviour
             Debug.Log("Place");
         }
 
-
+        mainCamera.transform.position = Vector3.Lerp(mainCamera.transform.position, targetCameraPosition, cameraMoveSpeed * Time.deltaTime);
     }
 
 
@@ -53,6 +56,8 @@ public class GameManager : MonoBehaviour
 
         // Toggle the spawn point for the next block
         useFirstSpawnPoint = !useFirstSpawnPoint;
+
+
     }
 
 
@@ -60,8 +65,7 @@ public class GameManager : MonoBehaviour
     {
         Destroy(currentBlock.GetComponent<BlockMover>());
 
-        print(Mathf.Abs(currentBlock.transform.position.x));
-        if (Mathf.Abs(currentBlock.transform.position.x) > 0.5f)
+        if (lastStackedBlock != null && !IsContactingLastBlock())
         {
             Debug.Log("Game Over");
 
@@ -74,8 +78,31 @@ public class GameManager : MonoBehaviour
         //sfx
 
         stackHeight += currentBlock.transform.localScale.y;
+        lastStackedBlock = currentBlock;
 
+        MoveCameraUp();
 
         SpawnBlock();
+    }
+    bool IsContactingLastBlock()
+    {
+        // Use the colliders to detect overlap
+        Collider currentCollider = currentBlock.GetComponent<Collider>();
+        Collider lastCollider = lastStackedBlock.GetComponent<Collider>();
+
+        return currentCollider.bounds.Intersects(lastCollider.bounds);
+    }
+
+    void MoveCameraUp()
+    {
+        if (mainCamera != null)
+        {
+            // Update the target camera position
+            targetCameraPosition.y += cameraMoveUpAmount;
+        }
+        else
+        {
+            Debug.LogWarning("Main Camera not assigned in GameManager!");
+        }
     }
 }
