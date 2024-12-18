@@ -15,7 +15,6 @@ public class CubeSpawn : MonoBehaviour
     public float speedIncreaseRate = 0.1f;
 
     public GameObject currentBlock;
-    public GameObject lastStackedBlock;
     void Awake()
 
     {
@@ -25,6 +24,7 @@ public class CubeSpawn : MonoBehaviour
         }
         SpawnBlock();
     }
+
    public void SpawnBlock()
     {
         // Determine which spawn point to use
