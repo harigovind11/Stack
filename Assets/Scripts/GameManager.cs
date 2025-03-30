@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
@@ -59,22 +60,25 @@ public class GameManager : MonoBehaviour
         float newXSize = currentBlockLocalScale.x - Mathf.Abs(hangoverX);
         float newXPosition = currentBlockPosition.x + (hangoverX / 2);
 
+        float directionX = hangoverX > 0 ? -1 : 1;
         float fallingBlockSizeX = currentBlockLocalScale.x - newXSize;
-        float cubeEdgeX = currentBlockPosition.x + (newXSize / 2f );
-        float fallingBlockPositionX = cubeEdgeX * fallingBlockSizeX / 2f ;
+        float cubeEdgeX = currentBlockPosition.x + (newXSize / 2f * directionX);
+        float fallingBlockPositionX = cubeEdgeX +( fallingBlockSizeX / 2f) * directionX;
+
 
         //z axis cutting
         float hangoverZ = transform.position.z - currentBlockPosition.z;
         float newZSize = currentBlockLocalScale.z - Mathf.Abs(hangoverZ);
         float newZPosition = currentBlockPosition.z + (hangoverZ / 2);
 
+        float directionZ = hangoverZ > 0 ? -1 : 1;
         float fallingBlockSizeZ = currentBlockLocalScale.z - newZSize;
-        float cubeEdgeZ = currentBlockPosition.z + (newZSize / 2f );
-        float fallingBlockPositionZ = cubeEdgeZ * fallingBlockSizeZ / 2f ;
+        float cubeEdgeZ = currentBlockPosition.z + (newZSize / 2f * directionZ);
+        float fallingBlockPositionZ = cubeEdgeZ +( fallingBlockSizeZ / 2f )* directionZ;
 
 
         //assign new scale and position
-        CubeSpawn.instance.currentBlock.transform.position = new Vector3(newXPosition, currentBlockPosition.y, newZPosition);
+        CubeSpawn.instance.currentBlock.transform.position = new Vector3(newXPosition, currentBlockPosition.y, newZPosition); 
         CubeSpawn.instance.currentBlock.transform.localScale = new Vector3(newXSize, currentBlockLocalScale.y, newZSize);
 
         bool firstSpawnPoint = CubeSpawn.instance.useFirstSpawnPoint;
@@ -84,17 +88,16 @@ public class GameManager : MonoBehaviour
             var cubeX = GameObject.CreatePrimitive(PrimitiveType.Cube);
             cubeX.transform.localScale = new Vector3(fallingBlockSizeX, currentBlockLocalScale.y, currentBlockLocalScale.z);
             cubeX.transform.localPosition = new Vector3(fallingBlockPositionX, currentBlockPosition.y, currentBlockPosition.z);
+            cubeX.AddComponent<Rigidbody>();
+
         }
         else
         {
             var cubeZ = GameObject.CreatePrimitive(PrimitiveType.Cube);
             cubeZ.transform.localScale = new Vector3(currentBlockLocalScale.x, currentBlockLocalScale.y, fallingBlockSizeZ);
             cubeZ.transform.localPosition = new Vector3(currentBlockPosition.x, currentBlockPosition.y, fallingBlockPositionZ);
-
+            cubeZ.AddComponent<Rigidbody>();
         }
-
-
-
 
 
         //sfx
