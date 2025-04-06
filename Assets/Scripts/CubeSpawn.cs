@@ -4,57 +4,104 @@ using UnityEngine;
 
 public class CubeSpawn : MonoBehaviour
 {
-    public static CubeSpawn instance;
+    // Singleton Instance to ensure only one CubeSpawn exists
+    public static CubeSpawn Instance { get; private set; }-
 
-    [SerializeField] GameObject blockPrefab;
-    [SerializeField] Transform spawnPoint1;
-    [SerializeField] Transform spawnPoint2;
+    [SerializeField] private GameObject blockPrefab; // Prefab used for spawning blocks
+    [SerializeField] private Transform spawnPoint1;   // First spawn location
+    [SerializeField] private Transform spawnPoint2;   // Second spawn location
 
-    public float stackHeight;
-    public bool useFirstSpawnPoint = true;
-    public float speedIncreaseRate = 0.1f;
+    public float stackHeight; // Vertical offset for stacking new blocks
+    public bool useFirstSpawnPoint = true; // Toggle to alternate between spawn points
+    public float speedIncreaseRate = 0.1f; // Controls how much the block's speed increases with height
 
-    public GameObject currentBlock;
-    void Awake()
+    public GameObject CurrentBlock { get; private set; } // Reference to the currently active block
 
+    private void Awake()
     {
-        if (instance == null)
+        // Set the singleton Instance, destroy this object if another exists
+        if (Instance == null)
         {
-            instance = this;
+            Instance = this;
         }
+        else if (Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+    }
+
+    private void Start()
+    {
+        // Spawn the first block when the game starts
         SpawnBlock();
     }
 
     public void SpawnBlock()
     {
-        // Determine which spawn point to use
-        Transform selectedSpawnPoint = useFirstSpawnPoint ? spawnPoint1 : spawnPoint2;
-
-        // Get the scale from the last stacked block (if it exists)
-        Vector3 newScale = blockPrefab.transform.localScale;
-        if (GameManager.instance.lastStackedBlock != null)
+        // Ensure all required references are assigned
+        if (blockPrefab == null || spawnPoint1 == null || spawnPoint2 == null)
         {
-            newScale = GameManager.instance.lastStackedBlock.transform.localScale;
+            Debug.LogError("CubeSpawn: Missing required references.");
+            return;
         }
 
-        // Spawn the new block with the inherited scale
-        currentBlock = Instantiate(
-            blockPrefab,
-            new Vector3(
-                selectedSpawnPoint.position.x,
-                selectedSpawnPoint.position.y + stackHeight,
-                selectedSpawnPoint.position.z
-            ),
-            Quaternion.identity
-        );
-        currentBlock.transform.localScale = newScale; // Apply the inherited scale
+        // Choose which spawn point to use based on the toggle
+        Transform selectedSpawnPoint = useFirstSpawnPoint ? spawnPoint1 : spawnPoint2;
 
-        // Add BlockMover script and adjust speed
-        BlockMover mover = currentBlock.AddComponent<BlockMover>();
+        // Start with the default block scale
+        Vector3 newScale = blockPrefab.transform.localScale;
+
+        Vector3 newPosition;
+
+        // If there's a stacked block in the game manager, inherit its scale
+        if (GameManager.Instance != null && GameManager.Instance.lastStackedBlock != null)
+        {
+            newScale = GameManager.Instance.lastStackedBlock.transform.localScale;
+
+            newPosition = new Vector3(
+              GameManager.Instance.lastStackedBlock.transform.localPosition.x,
+                selectedSpawnPoint.position.y + stackHeight,
+              GameManager.Instance.lastStackedBlock.transform.localPosition.z
+            );
+            // Determine the position to spawn the block based on stack height
+            Vector3 spawnPosition = new Vector3(
+               useFirstSpawnPoint ?  newPosition.x :selectedSpawnPoint.position.x ,
+                selectedSpawnPoint.position.y + stackHeight,
+                 useFirstSpawnPoint ? selectedSpawnPoint.position.z:newPosition.z 
+            );
+
+            // Instantiate the block at the calculated position
+            CurrentBlock = Instantiate(blockPrefab, spawnPosition, Quaternion.identity);
+        }
+        else
+        {
+            Debug.Log("No last stacked block found, spawning at default position.");
+            Vector3 spawnPosition = new Vector3(
+         selectedSpawnPoint.position.x,
+         selectedSpawnPoint.position.y + stackHeight,
+         selectedSpawnPoint.position.z
+     );
+            CurrentBlock = Instantiate(blockPrefab, spawnPosition, Quaternion.identity);
+        }
+
+
+
+
+        // Apply inherited or default scale to the new block
+        CurrentBlock.transform.localScale = newScale;
+
+        // Check if a BlockMover already exists; if not, add it
+        BlockMover mover = CurrentBlock.GetComponent<BlockMover>();
+        if (mover == null)
+        {
+            mover = CurrentBlock.AddComponent<BlockMover>();
+        }
+
+        // Increase the block's move speed based on how high it's stacked
         mover.moveSpeed += stackHeight * speedIncreaseRate;
 
-        // Toggle spawn point for the next block
+        // Toggle the spawn point to alternate for the next block
         useFirstSpawnPoint = !useFirstSpawnPoint;
     }
-
 }
